@@ -73,7 +73,9 @@ public class AnimationPanel extends LinearLayout {
 
             int[] location = new int[2];
             view.getLocationInWindow(location);
-            mIsDownward = location[1] < ((View) view.getParent()).getHeight() / 2;
+            View parent = ((View) view.getParent());
+            mMenuView.measure(0, 0);
+            mIsDownward = location[1] < parent.getHeight() - mMenuView.getMeasuredHeight();
 
             LayoutParams itemLayoutParams = new LayoutParams(view.getWidth(), view.getHeight());
             itemLayoutParams.leftMargin = location[0];

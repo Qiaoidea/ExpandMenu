@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -12,15 +13,18 @@ import android.widget.TextView;
 
 import me.qiao.pop.PopMenu;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener{
-    ListView listView;
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(createListView());
+    }
 
-        listView = (ListView)findViewById(R.id.listview);
+    private ListView createListView(){
+        ListView listView = new ListView(this);
+        listView.setDivider(null);
+        listView.setScrollbarFadingEnabled(false);
         listView.setAdapter(new BaseAdapter() {
             @Override
             public int getCount() {
@@ -43,22 +47,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     convertView = ViewHolder.generateView(parent);
                 }
                 ViewHolder holder = (ViewHolder) convertView.getTag();
-                holder.titleView.setText("百年大计 Title"+position);
-                holder.contentView.setText("一年之计在于春，一日之计在于晨。");
-
-                convertView.setOnClickListener(MainActivity.this);
+                holder.titleView.setText("日事日毕 Title"+position);
+                holder.contentView.setText("完成一行代码，养成一种习惯。");
 
                 return convertView;
             }
         });
+        listView.setOnItemClickListener(this);
+        return listView;
     }
 
     @Override
-    public void onClick(View v) {
-        Object obj = v.getTag();
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        Object obj = view.getTag();
         if(obj instanceof ViewHolder){
-            View optionView = getLayoutInflater().inflate(R.layout.popmenu, (ViewGroup) v.getParent(), false);
-            new PopMenu(this, v, optionView, ((ViewHolder)obj).titleView).show();
+            View optionView = getLayoutInflater().inflate(R.layout.popmenu, parent, false);
+
+            PopMenu.Builder
+                    .create(this)
+                    .setItemView(view)
+                    .setMenuView(optionView)
+                    .setTextView(((ViewHolder)obj).titleView)
+                    .build()
+                    .show();
         }
     }
 

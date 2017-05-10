@@ -147,6 +147,39 @@ public class PopMenu implements MenuLayer.LayerListener {
 
             return super.dispatchKeyEvent(event);
         }
+    }
 
+    public static class Builder{
+        private Context context;
+        private View itemView;
+        private View menuView;
+        private TextView textView;
+
+        private Builder(Context context){
+            this.context = context;
+        }
+
+        public Builder setItemView(View itemView) {
+            this.itemView = itemView;
+            return this;
+        }
+
+        public Builder setMenuView(View menuView) {
+            this.menuView = menuView;
+            return this;
+        }
+
+        public Builder setTextView(TextView textView) {
+            this.textView = textView;
+            return this;
+        }
+
+        public PopMenu build(){
+            return new PopMenu(this.context, this.itemView, this.menuView, this.textView);
+        }
+
+        public static Builder create(Context context){
+            return new Builder(context);
+        }
     }
 }
