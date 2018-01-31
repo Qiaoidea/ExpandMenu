@@ -54,6 +54,10 @@ public class MenuLayer extends FrameLayout {
         }
     }
 
+    protected View sourceView() {
+        return mPanel.getCardView().getSourceView();
+    }
+
     public void getPanelRect(Rect rect){
         mMenuView.getGlobalVisibleRect(rect);
     }

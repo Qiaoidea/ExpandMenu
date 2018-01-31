@@ -1,58 +1,42 @@
 package me.qiao.popmenu;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.os.Bundle;
+import android.support.v4.view.ViewCompat;
+import android.support.v4.view.ViewPropertyAnimatorListener;
+import android.support.v4.view.ViewPropertyAnimatorUpdateListener;
 import android.support.v7.app.AppCompatActivity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
+
+import java.util.List;
 
 import me.qiao.pop.PopMenu;
+import me.qiao.popmenu.bean.SampleDataSource;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener{
+public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, View.OnClickListener, PopMenu.IClickHandler {
+
+    private PopMenu mMenu;
+    private View mOptionView;
+    private ListView mListView;
+    private List mDatas;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(createListView());
+        setContentView(mListView = createListView());
     }
 
-    private ListView createListView(){
+    private ListView createListView() {
         ListView listView = new ListView(this);
         listView.setDivider(null);
         listView.setScrollbarFadingEnabled(false);
-        listView.setAdapter(new BaseAdapter() {
-            @Override
-            public int getCount() {
-                return 20;
-            }
-
-            @Override
-            public Object getItem(int position) {
-                return position;
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return position;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                if(convertView == null){
-                    convertView = ViewHolder.generateView(parent);
-                }
-                ViewHolder holder = (ViewHolder) convertView.getTag();
-                holder.titleView.setText("日事日毕 Title"+position);
-                holder.contentView.setText("完成一行代码，养成一种习惯。");
-
-                return convertView;
-            }
-        });
+        listView.setAdapter(new CommentArrayAdapter(this, mDatas = SampleDataSource.prepareCommentsArray()));
         listView.setOnItemClickListener(this);
         return listView;
     }
@@ -60,31 +44,62 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Object obj = view.getTag();
-        if(obj instanceof ViewHolder){
-            View optionView = getLayoutInflater().inflate(R.layout.popmenu, parent, false);
+        if (obj instanceof CommentArrayAdapter.ViewHolder) {
 
-            PopMenu.Builder
+            mMenu = PopMenu.Builder
                     .create(this)
-                    .setItemView(view)
-                    .setMenuView(optionView)
-                    .setTextView(((ViewHolder)obj).titleView)
-                    .build()
-                    .show();
+                    .bindItemView(view)
+                    .withMenu(generateMenu())
+                    .deprecatedLine(((CommentArrayAdapter.ViewHolder) obj).line2)
+                    .onDismiss(this)
+                    .build();
+            mMenu.show();
         }
     }
 
-    static class ViewHolder {
-        ImageView icon;
-        TextView titleView, contentView;
+    private View generateMenu() {
+        if (mOptionView == null) {
+            mOptionView = getLayoutInflater().inflate(R.layout.popmenu, null);
+            mOptionView.setOnClickListener(this);
+        }
+        if (mOptionView.getParent() instanceof ViewGroup) {
+            ((ViewGroup) mOptionView.getParent()).removeView(mOptionView);
+        }
+        return mOptionView;
+    }
 
-        public static View generateView(ViewGroup parent){
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item,parent,false);
-            ViewHolder holder = new ViewHolder();
-            holder.icon = (ImageView) view.findViewById(R.id.icon);
-            holder.titleView = (TextView) view.findViewById(R.id.title);
-            holder.contentView = (TextView) view.findViewById(R.id.content);
-            view.setTag(holder);
-            return view;
+    @Override
+    public void onClick(View v) {
+        if (mMenu != null) {
+            mMenu.dismiss(true);
+        }
+    }
+
+    @Override
+    public void onMenuDismiss(boolean isClicked, final View itemView) {
+        if (isClicked) {
+            final ViewGroup.LayoutParams lp = itemView.getLayoutParams();
+            final int originalHeight = itemView.getHeight();
+            ValueAnimator heightAnimator = ValueAnimator.ofInt(originalHeight, 0);
+            heightAnimator.setDuration(350);
+            heightAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(final ValueAnimator valueAnimator) {
+                    lp.height = (Integer) valueAnimator.getAnimatedValue();
+                    itemView.setLayoutParams(lp);
+                }
+            });
+            heightAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (itemView.getTag() instanceof CommentArrayAdapter.ViewHolder) {
+                        CommentArrayAdapter.ViewHolder holder = (CommentArrayAdapter.ViewHolder) itemView.getTag();
+                        mDatas.remove(holder.position);
+                        ((BaseAdapter) mListView.getAdapter()).notifyDataSetChanged();
+                    }
+                }
+            });
+            heightAnimator.start();
         }
     }
 }

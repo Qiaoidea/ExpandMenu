@@ -15,6 +15,7 @@ package me.qiao.pop;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -30,11 +31,13 @@ public class PopMenu implements MenuLayer.LayerListener {
     private WindowManager.LayoutParams mWindowLayoutParams;
     private RootView mRootView;
     private MenuLayer mMenuLayer;
+    private IClickHandler mActionHandler;
 
-    public PopMenu(Context context, View itemView, View menuView, TextView textView) {
+    public PopMenu(Context context, View itemView, View menuView, TextView textView, IClickHandler handler) {
         mContext = context;
         menuView.setBackgroundDrawable(null);
         mMenuLayer = new MenuLayer(context, itemView, menuView, textView, this);
+        this.mActionHandler = handler;
 
         initWindow();
     }
@@ -92,6 +95,9 @@ public class PopMenu implements MenuLayer.LayerListener {
             mWindowLayoutParams.windowAnimations = 0;
             Util.updateAndroidWindowLP(mContext, mRootView, mWindowLayoutParams); // update pop animation
             Util.popAndroidWindow(mContext, mRootView);
+            if(mActionHandler != null) {
+                mActionHandler.onMenuDismiss(clickOk, mMenuLayer.sourceView());
+            }
         }
     }
 
@@ -154,32 +160,42 @@ public class PopMenu implements MenuLayer.LayerListener {
         private View itemView;
         private View menuView;
         private TextView textView;
+        private IClickHandler clickHandler;
 
         private Builder(Context context){
             this.context = context;
         }
 
-        public Builder setItemView(View itemView) {
+        public Builder bindItemView(View itemView) {
             this.itemView = itemView;
             return this;
         }
 
-        public Builder setMenuView(View menuView) {
+        public Builder withMenu(View menuView) {
             this.menuView = menuView;
             return this;
         }
 
-        public Builder setTextView(TextView textView) {
+        public Builder onDismiss(IClickHandler handler) {
+            this.clickHandler = handler;
+            return this;
+        }
+
+        public Builder deprecatedLine(TextView textView) {
             this.textView = textView;
             return this;
         }
 
         public PopMenu build(){
-            return new PopMenu(this.context, this.itemView, this.menuView, this.textView);
+            return new PopMenu(this.context, this.itemView, this.menuView, this.textView, this.clickHandler);
         }
 
         public static Builder create(Context context){
             return new Builder(context);
         }
+    }
+
+    public interface IClickHandler{
+        void onMenuDismiss(boolean isClicked, View targetView);
     }
 }
